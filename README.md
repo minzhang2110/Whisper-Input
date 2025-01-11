@@ -2,16 +2,10 @@
 
 Whisper Input 是受到即友[FeiTTT](https://web.okjike.com/u/DB98BE7A-9DBB-4730-B6B9-2DC883B986B1)启发做的一个简单的 python 代码。可以实现按下 Option 按钮开始录制，抬起按钮就结束录制，并调用 Groq Whisper Large V3 Turbo 模型进行转译，由于 Groq 的速度非常快，所以大部分的语音输入都可以在 1-2s 内反馈。并且得益于 whisper 的强大能力，转译效果非常不错。
 
+查看[视频效果演示](https://img.erlich.fun/personal-blog/uPic/Whisper-Input_compressed.mp4)
 
 
 **重点：Groq 只要注册，就提供一定的免费用量，并且在我们这个使用场景下免费已经完全够用了！**
-
-
-
-<video controls>
-  <source src="https://img.erlich.fun/personal-blog/uPic/Whisper-Input_compressed.mp4" type="video/mp4" />
-</video>
-
 
 
 ## 使用方法
