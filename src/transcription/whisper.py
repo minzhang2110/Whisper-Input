@@ -17,7 +17,7 @@ class WhisperTranscriber:
                 response = self.client.audio.transcriptions.create(
                     model="whisper-large-v3-turbo", 
                     response_format="text",
-                    prompt="适当添加标点符号",
+                    prompt="适当添加标点符号，通常是简体中文",
                     file=("audio.wav", audio_file.read())
                 )
                 result = str(response).strip()
