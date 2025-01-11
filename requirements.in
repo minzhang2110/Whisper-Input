@@ -1,0 +1,11 @@
+pynput 
+openai
+pip-tools
+pyqt5
+python-dotenv
+sounddevice
+numpy
+pyperclip
+groq
+soundfile
+colorlog
