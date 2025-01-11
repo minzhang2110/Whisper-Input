@@ -2,7 +2,17 @@
 
 Whisper Input 是受到即友[FeiTTT](https://web.okjike.com/u/DB98BE7A-9DBB-4730-B6B9-2DC883B986B1)启发做的一个简单的 python 代码。可以实现按下 Option 按钮开始录制，抬起按钮就结束录制，并调用 Groq Whisper Large V3 Turbo 模型进行转译，由于 Groq 的速度非常快，所以大部分的语音输入都可以在 1-2s 内反馈。并且得益于 whisper 的强大能力，转译效果非常不错。
 
-查看[视频效果演示](https://img.erlich.fun/personal-blog/uPic/Whisper-Input_compressed.mp4)
+## 功能
+
+| 功能           | 快捷键                          |
+| -------------- | ------------------------------- |
+| 多语言语音转译 | Option 或者 Alt                 |
+| 中文翻译为英文 | Shift + Option 或者 Shift + Alt |
+
+
+
+查看[视频效果演示](https://img.erlich.fun/personal-blog/uPic/WhisperInputV02_compressed.mp4)
+
 
 
 **重点：Groq 只要注册，就提供一定的免费用量，并且在我们这个使用场景下免费已经完全够用了！**
@@ -63,6 +73,8 @@ Whisper Input 是受到即友[FeiTTT](https://web.okjike.com/u/DB98BE7A-9DBB-473
 
 由于这个程序需要一直在后台运行，所以最好找一个自己不会经常下意识关掉的终端或者终端里的 Tab 来运行，不然很容易会不小心关掉。
 
+
+
 关注作者个人网站，了解更多项目: https://erlich.fun
 
 
@@ -71,9 +83,13 @@ Whisper Input 是受到即友[FeiTTT](https://web.okjike.com/u/DB98BE7A-9DBB-473
 
 ## 未来计划
 
-[ ] 标点符号支持
+[✅] 多语言转译功能
 
-[ ] 添加 Agents，或许可以实现一些屏幕截图，根据上下文做一些输入输出之类的
+[✅] 中文或多语言转译为英文
+
+[  ] 标点符号支持
+
+[  ] 添加 Agents，或许可以实现一些屏幕截图，根据上下文做一些输入输出之类的
 
 
 

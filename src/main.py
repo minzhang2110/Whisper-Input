@@ -1,7 +1,7 @@
 import sys
 from audio.recorder import AudioRecorder
 from keyboard.listener import KeyboardManager, check_accessibility_permissions
-from transcription.whisper import WhisperTranscriber
+from transcription.whisper import WhisperProcessor
 from utils.logger import logger
 
 def check_microphone_permissions():
@@ -17,37 +17,60 @@ def check_microphone_permissions():
     logger.warning("\n授权后，请重新运行此程序。")
     logger.warning("===============================\n")
 
-class VoiceInputTool:
+class VoiceAssistant:
     def __init__(self):
         self.audio_recorder = AudioRecorder()
-        self.transcriber = WhisperTranscriber()
+        self.whisper_processor = WhisperProcessor()
         self.keyboard_manager = KeyboardManager(
-            on_record_start=self.start_recording,
-            on_record_stop=self.stop_recording
+            on_record_start=self.start_transcription_recording,
+            on_record_stop=self.stop_transcription_recording,
+            on_translate_start=self.start_translation_recording,
+            on_translate_stop=self.stop_translation_recording
         )
     
-    def start_recording(self):
-        """开始录音"""
+    def start_transcription_recording(self):
+        """开始录音（转录模式）"""
         self.audio_recorder.start_recording()
     
-    def stop_recording(self):
-        """停止录音并处理"""
+    def stop_transcription_recording(self):
+        """停止录音并处理（转录模式）"""
         audio_path = self.audio_recorder.stop_recording()
         if audio_path:
-            text = self.transcriber.transcribe(audio_path)
-            if text:
-                self.keyboard_manager.type_text(text)
+            result = self.whisper_processor.process_audio(
+                audio_path,
+                mode="transcriptions",
+                prompt=""
+            )
+            self.keyboard_manager.type_text(result)
+        return audio_path  # 返回audio_path
+    
+    def start_translation_recording(self):
+        """开始录音（翻译模式）"""
+        self.audio_recorder.start_recording()
+    
+    def stop_translation_recording(self):
+        """停止录音并处理（翻译模式）"""
+        audio_path = self.audio_recorder.stop_recording()
+        if audio_path:
+            result = self.whisper_processor.process_audio(
+                audio_path,
+                mode="translations",
+                prompt=""
+            )
+            self.keyboard_manager.type_text(result)
+        return audio_path  # 返回audio_path
     
     def run(self):
-        """运行语音输入工具"""
-        logger.info("=== 语音输入工具已启动 ===")
-        logger.info("按住 Option 键开始录音，松开结束录音")
+        """运行语音助手"""
+        logger.info("=== 语音助手已启动 ===")
+        logger.info("按住 Option 键：实时语音转录（保持原文）")
+        logger.info("按住 Option + Shift：实时语音翻译（翻译成中文）")
         self.keyboard_manager.start_listening()
 
 def main():
     try:
-        tool = VoiceInputTool()
-        tool.run()
+        assistant = VoiceAssistant()
+        assistant.run()
     except Exception as e:
         error_msg = str(e)
         if "Input event monitoring will not be possible" in error_msg:
