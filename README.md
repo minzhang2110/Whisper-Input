@@ -62,6 +62,8 @@ Whisper Input 是受到即友[FeiTTT](https://web.okjike.com/u/DB98BE7A-9DBB-473
 
 由于这个程序需要一直在后台运行，所以最好找一个自己不会经常下意识关掉的终端或者终端里的 Tab 来运行，不然很容易会不小心关掉。
 
+关注作者个人网站，了解更多项目: https://erlich.fun
+
 
 
 
