@@ -2,27 +2,8 @@ from pynput.keyboard import Controller, Key, Listener
 import pyperclip
 from ..utils.logger import logger
 import time
-from enum import Enum, auto
+from .inputState import InputState
 
-class InputState(Enum):
-    """输入状态枚举"""
-    IDLE = auto()           # 空闲状态
-    RECORDING = auto()      # 正在录音
-    RECORDING_TRANSLATE = auto()  # 正在录音(翻译模式)
-    PROCESSING = auto()     # 正在处理
-    TRANSLATING = auto()    # 正在翻译
-    ERROR = auto()          # 错误状态
-    WARNING = auto()        # 警告状态（用于录音时长不足等提示）
-
-    @property
-    def is_recording(self):
-        """检查是否处于录音状态"""
-        return self in (InputState.RECORDING, InputState.RECORDING_TRANSLATE)
-    
-    @property
-    def can_start_recording(self):
-        """检查是否可以开始新的录音"""
-        return not self.is_recording
 
 class KeyboardManager:
     def __init__(self, on_record_start, on_record_stop, on_translate_start, on_translate_stop):
@@ -33,6 +14,10 @@ class KeyboardManager:
         self.processing_text = None  # 用于跟踪正在处理的文本
         self.error_message = None  # 用于跟踪错误信息
         self.warning_message = None  # 用于跟踪警告信息
+        self.option_press_time = None  # 记录 Option 按下的时间戳
+        self.PRESS_DURATION_THRESHOLD = 0.5  # 按键持续时间阈值（秒）
+        self.is_checking_duration = False  # 用于控制定时器线程
+        self.has_triggered = False  # 用于防止重复触发
         
         # 回调函数
         self.on_record_start = on_record_start
@@ -61,7 +46,6 @@ class KeyboardManager:
     def state(self, new_state):
         """设置新状态并更新UI"""
         if new_state != self._state:
-            old_state = self._state
             self._state = new_state
             
             # 获取状态消息
@@ -184,22 +168,44 @@ class KeyboardManager:
             self.keyboard.release('v')
         self.temp_text_length = len(text)
     
+    def start_duration_check(self):
+        """开始检查按键持续时间"""
+        if self.is_checking_duration:
+            return
+
+        def check_duration():
+            while self.is_checking_duration and self.option_pressed:
+                current_time = time.time()
+                if (not self.has_triggered and 
+                    self.option_press_time and 
+                    (current_time - self.option_press_time) >= self.PRESS_DURATION_THRESHOLD):
+                    
+                    # 达到阈值时触发相应功能
+                    if self.option_pressed and self.shift_pressed and self.state.can_start_recording:
+                        self.state = InputState.RECORDING_TRANSLATE
+                        self.on_translate_start()
+                        self.has_triggered = True
+                    elif self.option_pressed and not self.shift_pressed and self.state.can_start_recording:
+                        self.state = InputState.RECORDING
+                        self.on_record_start()
+                        self.has_triggered = True
+                
+                time.sleep(0.1)  # 短暂休眠以降低 CPU 使用率
+
+        self.is_checking_duration = True
+        import threading
+        threading.Thread(target=check_duration, daemon=True).start()
+
     def on_press(self, key):
         """按键按下时的回调"""
         try:
             if key == Key.alt_l:  # Option 键按下
                 self.option_pressed = True
-                if self.shift_pressed and self.state.can_start_recording:
-                    self.state = InputState.RECORDING_TRANSLATE
-                    self.on_translate_start()
-                elif self.state.can_start_recording:
-                    self.state = InputState.RECORDING
-                    self.on_record_start()
-            elif key == Key.shift:  # Shift 键按下
+                self.option_press_time = time.time()
+                self.has_triggered = False
+                self.start_duration_check()
+            elif key == Key.shift:
                 self.shift_pressed = True
-                if self.option_pressed and self.state.can_start_recording:
-                    self.state = InputState.RECORDING_TRANSLATE
-                    self.on_translate_start()
         except AttributeError:
             pass
 
@@ -208,28 +214,28 @@ class KeyboardManager:
         try:
             if key == Key.alt_l:  # Option 键释放
                 self.option_pressed = False
-                if self.state == InputState.RECORDING_TRANSLATE:
-                    # 先设置状态为翻译中
-                    self.state = InputState.TRANSLATING
-                    # 然后停止录音并处理
-                    audio_path = self.on_translate_stop()
-                    if audio_path is None:
-                        self._delete_previous_text()
-                        self.state = InputState.IDLE
-                elif self.state == InputState.RECORDING:
-                    # 先设置状态为处理中
-                    self.state = InputState.PROCESSING
-                    # 然后停止录音并处理
-                    audio_path = self.on_record_stop()
-                    if audio_path is None:
-                        self._delete_previous_text()
-                        self.state = InputState.IDLE
-            elif key == Key.shift:  # Shift 键释放
+                self.option_press_time = None
+                self.is_checking_duration = False
+                
+                if self.has_triggered:
+                    if self.state == InputState.RECORDING_TRANSLATE:
+                        self.state = InputState.TRANSLATING
+                        audio_path = self.on_translate_stop()
+                        if audio_path is None:
+                            self._delete_previous_text()
+                            self.state = InputState.IDLE
+                    elif self.state == InputState.RECORDING:
+                        self.state = InputState.PROCESSING
+                        audio_path = self.on_record_stop()
+                        if audio_path is None:
+                            self._delete_previous_text()
+                            self.state = InputState.IDLE
+            elif key == Key.shift:
                 self.shift_pressed = False
-                if self.state == InputState.RECORDING_TRANSLATE and not self.option_pressed:
-                    # 先设置状态为翻译中
+                if (self.state == InputState.RECORDING_TRANSLATE and 
+                    not self.option_pressed and 
+                    self.has_triggered):
                     self.state = InputState.TRANSLATING
-                    # 然后停止录音并处理
                     audio_path = self.on_translate_stop()
                     if audio_path is None:
                         self._delete_previous_text()

@@ -65,7 +65,7 @@ class VoiceAssistant:
         """运行语音助手"""
         logger.info("=== 语音助手已启动 ===")
         logger.info("按住 Option 键：实时语音转录（保持原文）")
-        logger.info("快速双击并按住 Option 键：实时语音翻译（翻译成英文）")
+        logger.info("按住 Shift + Option 键：实时语音翻译（翻译成英文）")
         self.keyboard_manager.start_listening()
 
 def main():
