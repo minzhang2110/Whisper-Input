@@ -1,5 +1,6 @@
 import os
 from groq import Groq
+from openai import OpenAI
 from ..utils.logger import logger
 import dotenv
 import time
@@ -38,9 +39,22 @@ def timeout_decorator(seconds):
     return decorator
 
 class WhisperProcessor:
+    # 类级别的配置参数
+    DEFAULT_TIMEOUT = 20  # API 超时时间（秒）
+    DEFAULT_MODEL = "whisper-large-v3-turbo"
+    
     def __init__(self):
-        self.client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-        self.timeout_seconds = 20  # API 超时时间（秒）
+        api_key = os.getenv("GROQ_API_KEY")
+        base_url = os.getenv("GROQ_BASE_URL")
+        
+        if not api_key:
+            raise ValueError("未设置 GROQ_API_KEY 环境变量")
+            
+        self.client = OpenAI(
+            api_key=api_key,
+            base_url=base_url if base_url else None
+        )
+        self.timeout_seconds = self.DEFAULT_TIMEOUT
     
     @timeout_decorator(20)
     def _call_api(self, mode, audio_data, prompt):
