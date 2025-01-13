@@ -6,6 +6,7 @@ import dotenv
 import time
 import threading
 from functools import wraps
+from opencc import OpenCC
 
 dotenv.load_dotenv()
 
@@ -46,6 +47,8 @@ class WhisperProcessor:
     def __init__(self):
         api_key = os.getenv("GROQ_API_KEY")
         base_url = os.getenv("GROQ_BASE_URL")
+        self.convert_to_simplified = os.getenv("CONVERT_TO_SIMPLIFIED", "false").lower() == "true"
+        self.cc = OpenCC('t2s') if self.convert_to_simplified else None
         
         if not api_key:
             raise ValueError("未设置 GROQ_API_KEY 环境变量")
@@ -55,6 +58,12 @@ class WhisperProcessor:
             base_url=base_url if base_url else None
         )
         self.timeout_seconds = self.DEFAULT_TIMEOUT
+    
+    def _convert_traditional_to_simplified(self, text):
+        """将繁体中文转换为简体中文"""
+        if not self.convert_to_simplified or not text:
+            return text
+        return self.cc.convert(text)
     
     @timeout_decorator(20)
     def _call_api(self, mode, audio_data, prompt):
@@ -94,6 +103,7 @@ class WhisperProcessor:
 
 
             result = self._call_api(mode, audio_buffer, prompt)
+            result = self._convert_traditional_to_simplified(result)
             logger.info(f"Whisper API 调用成功 ({mode}), 耗时: {time.time() - start_time:.1f}秒")
             return result, None
             
