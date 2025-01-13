@@ -61,7 +61,7 @@ class WhisperProcessor:
             )
         return str(response).strip()
     
-    def process_audio(self, audio_path, mode="transcriptions", prompt=""):
+    def process_audio(self, audio_buffer, mode="transcriptions", prompt=""):
         """调用 Whisper API 处理音频（转录或翻译）
         
         Args:
@@ -77,12 +77,17 @@ class WhisperProcessor:
         try:
             logger.info(f"正在调用 Whisper API... (模式: {mode})")
             start_time = time.time()
+
+
+            result = self._call_api(mode, audio_buffer, prompt)
+            logger.info(f"Whisper API 调用成功 ({mode}), 耗时: {time.time() - start_time:.1f}秒")
+            return result, None
             
-            with open(audio_path, "rb") as audio_file:
-                audio_data = audio_file.read()
-                result = self._call_api(mode, audio_data, prompt)
-                logger.info(f"Whisper API 调用成功 ({mode}), 耗时: {time.time() - start_time:.1f}秒")
-                return result, None
+            # with open(audio_path, "rb") as audio_file:
+            #     audio_data = audio_file.read()
+            #     result = self._call_api(mode, audio_data, prompt)
+            #     logger.info(f"Whisper API 调用成功 ({mode}), 耗时: {time.time() - start_time:.1f}秒")
+            #     return result, None
                 
         except TimeoutError:
             error_msg = f"❌ API 请求超时 ({self.timeout_seconds}秒)"
@@ -93,9 +98,11 @@ class WhisperProcessor:
             logger.error(f"音频处理错误: {str(e)}", exc_info=True)
             return None, error_msg
         finally:
-            # 删除临时文件
-            try:
-                os.remove(audio_path)
-                logger.info("临时音频文件已删除")
-            except Exception as e:
-                logger.error(f"删除临时文件失败: {e}") 
+            audio_buffer.close()  # 显式关闭字节流
+        # finally:
+        #     # 删除临时文件
+        #     try:
+        #         os.remove(audio_path)
+        #         logger.info("临时音频文件已删除")
+        #     except Exception as e:
+        #         logger.error(f"删除临时文件失败: {e}") 

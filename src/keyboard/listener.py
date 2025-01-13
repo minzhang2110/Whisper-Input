@@ -3,6 +3,7 @@ import pyperclip
 from ..utils.logger import logger
 import time
 from .inputState import InputState
+import os
 
 
 class KeyboardManager:
@@ -18,6 +19,7 @@ class KeyboardManager:
         self.PRESS_DURATION_THRESHOLD = 0.5  # 按键持续时间阈值（秒）
         self.is_checking_duration = False  # 用于控制定时器线程
         self.has_triggered = False  # 用于防止重复触发
+        
         
         # 回调函数
         self.on_record_start = on_record_start
@@ -36,6 +38,34 @@ class KeyboardManager:
             InputState.ERROR: lambda msg: f"{msg}",  # 错误消息使用函数动态生成
             InputState.WARNING: lambda msg: f"⚠️ {msg}"  # 警告消息使用函数动态生成
         }
+
+        # 获取系统平台
+        sysetem_platform = os.getenv("SYSTEM_PLATFORM")
+        if sysetem_platform == "win" :
+            self.sysetem_platform = Key.ctrl
+            logger.info("配置到Windows平台")
+        else:
+            self.sysetem_platform = Key.cmd
+            logger.info("配置到Mac平台")
+        
+
+        # 获取转录和翻译按钮
+        transcriptions_button = os.getenv("TRANSCRIPTIONS_BUTTON")
+        try:
+            self.transcriptions_button = Key[transcriptions_button]
+            logger.info(f"配置到转录按钮：{transcriptions_button}")
+        except KeyError:
+            logger.error(f"无效的转录按钮配置：{transcriptions_button}")
+
+        translations_button = os.getenv("TRANSLATIONS_BUTTON")
+        try:
+            self.translations_button = Key[translations_button]
+            logger.info(f"配置到翻译按钮(与转录按钮组合)：{translations_button}")
+        except KeyError:
+            logger.error(f"无效的翻译按钮配置：{translations_button}")
+
+        logger.info(f"按住 {transcriptions_button} 键：实时语音转录（保持原文）")
+        logger.info(f"按住 {translations_button} + {transcriptions_button} 键：实时语音翻译（翻译成英文）")
     
     @property
     def state(self):
@@ -50,44 +80,64 @@ class KeyboardManager:
             
             # 获取状态消息
             message = self._state_messages[new_state]
-            if callable(message):  # 如果是函数（用于错误/警告消息）
-                if new_state == InputState.ERROR:
-                    message = message(self.error_message)
-                else:  # WARNING
-                    message = message(self.warning_message)
-            
-            # 删除之前的提示文字
-            self._delete_previous_text()
             
             # 根据状态转换类型显示不同消息
-            if new_state in (InputState.PROCESSING, InputState.TRANSLATING):
-                # 处理或翻译状态
-                self.processing_text = message
-                self.type_temp_text(message)
-            elif new_state in (InputState.ERROR, InputState.WARNING):
-                # 错误或警告状态
-                self.type_temp_text(message)
-                self.schedule_message_clear(new_state)
-            elif new_state in (InputState.RECORDING, InputState.RECORDING_TRANSLATE):
-                # 录音状态
-                self.type_temp_text(message)
-            elif new_state == InputState.IDLE:
-                # 空闲状态，清除所有临时文本
-                self.processing_text = None
-            else:
-                # 其他状态
-                self.type_temp_text(message)
+            match new_state:
+                case InputState.RECORDING :
+                    # 录音状态
+                    self.temp_text_length = 0
+                    self.type_temp_text(message)
+                    self.on_record_start()
+                    
+                
+                case InputState.RECORDING_TRANSLATE:
+                    # 翻译,录音状态
+                    self.temp_text_length = 0
+                    self.type_temp_text(message)
+                    self.on_translate_start()
+
+                case InputState.PROCESSING:
+                    self._delete_previous_text()
+                    self.type_temp_text(message)
+                    self.processing_text = message
+                    self.on_record_stop()
+
+                case InputState.TRANSLATING:
+                    # 翻译状态
+                    self._delete_previous_text()                 
+                    self.type_temp_text(message)
+                    self.processing_text = message
+                    self.on_translate_stop()
+                
+                case InputState.WARNING:
+                    # 警告状态
+                    message = message(self.warning_message)
+                    self._delete_previous_text()
+                    self.type_temp_text(message)
+                    self.warning_message = None
+                    self._schedule_message_clear()     
+                
+                case InputState.ERROR:
+                    # 错误状态
+                    message = message(self.error_message)
+                    self._delete_previous_text()
+                    self.type_temp_text(message)
+                    self.error_message = None
+                    self._schedule_message_clear()  
+            
+                case InputState.IDLE:
+                    # 空闲状态，清除所有临时文本
+                    self.processing_text = None
+                
+                case _:
+                    # 其他状态
+                    self.type_temp_text(message)
     
-    def schedule_message_clear(self, message_state):
+    def _schedule_message_clear(self):
         """计划清除消息"""
         def clear_message():
             time.sleep(2)  # 警告消息显示2秒
-            if self.state == message_state:
-                if message_state == InputState.ERROR:
-                    self.error_message = None
-                else:  # WARNING
-                    self.warning_message = None
-                self.state = InputState.IDLE
+            self.state = InputState.IDLE
         
         import threading
         threading.Thread(target=clear_message, daemon=True).start()
@@ -127,23 +177,18 @@ class KeyboardManager:
             logger.info("正在输入转录文本...")
             self._delete_previous_text()
             # 先输入文本和完成标记
-            pyperclip.copy(text + " ✅")
-            with self.keyboard.pressed(Key.cmd):
-                self.keyboard.press('v')
-                self.keyboard.release('v')
+            self.type_temp_text(text+" ✅")
             
             # 等待一小段时间确保文本已输入
             time.sleep(0.5)
             
             # 删除完成标记（2个字符：空格和✅）
-            for _ in range(2):
-                self.keyboard.press(Key.backspace)
-                self.keyboard.release(Key.backspace)
+            self.temp_text_length = 2
+            self._delete_previous_text()
             
             logger.info("文本输入完成")
             
             # 清理处理状态
-            self.processing_text = None
             self.state = InputState.IDLE
         except Exception as e:
             logger.error(f"文本输入失败: {e}")
@@ -155,17 +200,22 @@ class KeyboardManager:
             for _ in range(self.temp_text_length):
                 self.keyboard.press(Key.backspace)
                 self.keyboard.release(Key.backspace)
-            self.temp_text_length = 0
+                time.sleep(0.05) 
+        self.temp_text_length = 0
     
     def type_temp_text(self, text):
         """输入临时状态文本"""
         if not text:
             return
-        self._delete_previous_text()
+        # 将文本复制到剪贴板
         pyperclip.copy(text)
-        with self.keyboard.pressed(Key.cmd):
+
+        # 模拟 Ctrl + V 粘贴文本
+        with self.keyboard.pressed(Key.ctrl):
             self.keyboard.press('v')
             self.keyboard.release('v')
+
+        # 更新临时文本长度
         self.temp_text_length = len(text)
     
     def start_duration_check(self):
@@ -183,11 +233,11 @@ class KeyboardManager:
                     # 达到阈值时触发相应功能
                     if self.option_pressed and self.shift_pressed and self.state.can_start_recording:
                         self.state = InputState.RECORDING_TRANSLATE
-                        self.on_translate_start()
+                        # self.on_translate_start()
                         self.has_triggered = True
                     elif self.option_pressed and not self.shift_pressed and self.state.can_start_recording:
                         self.state = InputState.RECORDING
-                        self.on_record_start()
+                        # self.on_record_start()
                         self.has_triggered = True
                 
                 time.sleep(0.1)  # 短暂休眠以降低 CPU 使用率
@@ -199,12 +249,12 @@ class KeyboardManager:
     def on_press(self, key):
         """按键按下时的回调"""
         try:
-            if key == Key.alt_l:  # Option 键按下
+            if key == self.transcriptions_button: #Key.f8:  # Option 键按下
                 self.option_pressed = True
                 self.option_press_time = time.time()
-                self.has_triggered = False
+                #self.has_triggered = False
                 self.start_duration_check()
-            elif key == Key.shift:
+            elif key == self.translations_button:
                 self.shift_pressed = True
         except AttributeError:
             pass
@@ -212,7 +262,8 @@ class KeyboardManager:
     def on_release(self, key):
         """按键释放时的回调"""
         try:
-            if key == Key.alt_l:  # Option 键释放
+            if key == self.transcriptions_button:# Key.f8:  # Option 键释放
+                self.shift_pressed = False
                 self.option_pressed = False
                 self.option_press_time = None
                 self.is_checking_duration = False
@@ -220,26 +271,16 @@ class KeyboardManager:
                 if self.has_triggered:
                     if self.state == InputState.RECORDING_TRANSLATE:
                         self.state = InputState.TRANSLATING
-                        audio_path = self.on_translate_stop()
-                        if audio_path is None:
-                            self._delete_previous_text()
-                            self.state = InputState.IDLE
                     elif self.state == InputState.RECORDING:
                         self.state = InputState.PROCESSING
-                        audio_path = self.on_record_stop()
-                        if audio_path is None:
-                            self._delete_previous_text()
-                            self.state = InputState.IDLE
-            elif key == Key.shift:
+                    self.has_triggered = False
+            elif key == self.translations_button:#Key.f7:
                 self.shift_pressed = False
                 if (self.state == InputState.RECORDING_TRANSLATE and 
                     not self.option_pressed and 
                     self.has_triggered):
                     self.state = InputState.TRANSLATING
-                    audio_path = self.on_translate_stop()
-                    if audio_path is None:
-                        self._delete_previous_text()
-                        self.state = InputState.IDLE
+                    self.has_triggered = False
         except AttributeError:
             pass
     
