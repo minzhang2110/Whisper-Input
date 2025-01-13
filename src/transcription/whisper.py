@@ -1,5 +1,5 @@
 import os
-from groq import Groq
+from ..llm.symbol import SymbolProcessor
 from openai import OpenAI
 from ..utils.logger import logger
 import dotenv
@@ -49,6 +49,8 @@ class WhisperProcessor:
         base_url = os.getenv("GROQ_BASE_URL")
         self.convert_to_simplified = os.getenv("CONVERT_TO_SIMPLIFIED", "false").lower() == "true"
         self.cc = OpenCC('t2s') if self.convert_to_simplified else None
+        self.symbol = SymbolProcessor()
+        self.add_symbol = os.getenv("ADD_SYMBOL", "false").lower() == "true"
         
         if not api_key:
             raise ValueError("未设置 GROQ_API_KEY 环境变量")
@@ -103,8 +105,10 @@ class WhisperProcessor:
 
 
             result = self._call_api(mode, audio_buffer, prompt)
-            result = self._convert_traditional_to_simplified(result)
             logger.info(f"Whisper API 调用成功 ({mode}), 耗时: {time.time() - start_time:.1f}秒")
+            result = self._convert_traditional_to_simplified(result)
+            if self.add_symbol:
+                result = self.symbol.add_symbol(result)
             return result, None
             
             # with open(audio_path, "rb") as audio_file:

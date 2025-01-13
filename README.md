@@ -87,7 +87,7 @@ Whisper Input 是受到即友[FeiTTT](https://web.okjike.com/u/DB98BE7A-9DBB-473
 
 [✅] 中文或多语言转译为英文
 
-[  ] 标点符号支持
+[✅] 标点符号支持
 
 [  ] 添加 Agents，或许可以实现一些屏幕截图，根据上下文做一些输入输出之类的
 
@@ -100,6 +100,7 @@ Whisper Input 是受到即友[FeiTTT](https://web.okjike.com/u/DB98BE7A-9DBB-473
 #### 2025.01.13
 > 1. 支持国内网络，无需申请 Groq API KEY 可以免费使用，Erlich 提供免费代理 API KEY
 > 2. 通过环境变量支持将繁体中文转化为简体中文 `.env` ，`CONVERT_TO_SIMPLIFIED=true`，默认开启
+> 3. 通过环境变量支持添加标点符号功能 `.env`，`ADD_SYMBOL=true`，默认开启，可以更换模型
 
 #### 2025.01.12
 > 1. 增加了一个延迟 0.5s 的触发，方便在一些快捷键需要用到 Option/Alt 按钮时不会被误触
