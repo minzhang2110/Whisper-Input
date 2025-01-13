@@ -6,6 +6,6 @@ python-dotenv
 sounddevice
 numpy
 pyperclip
-groq
 soundfile
 colorlog
+openai
