@@ -97,6 +97,9 @@ Whisper Input 是受到即友[FeiTTT](https://web.okjike.com/u/DB98BE7A-9DBB-473
 
 ## 更新日志
 
+#### 2025.01.14
+> 1. 支持语音输入结果优化，并更换推荐模型为 `Llama 3.3 70B`，同样免费
+
 #### 2025.01.13
 > 1. 支持国内网络，无需申请 Groq API KEY 可以免费使用，Erlich 提供免费代理 API KEY
 > 2. 通过环境变量支持将繁体中文转化为简体中文 `.env` ，`CONVERT_TO_SIMPLIFIED=true`，默认开启
@@ -107,7 +110,6 @@ Whisper Input 是受到即友[FeiTTT](https://web.okjike.com/u/DB98BE7A-9DBB-473
 > 2. 重构代码
 
 #### 2025.01.11
-
 > 1. 支持快捷键按下后的状态显示【正在录音、正在转译/翻译、完成】
 > 2. 支持多语言语音转换为英文输出
 

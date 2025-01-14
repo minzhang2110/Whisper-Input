@@ -24,3 +24,18 @@ class SymbolProcessor:
             return response.choices[0].message.content
         except Exception as e:
             return text, e
+        
+    def optimize_result(self, text):
+        """优化识别结果"""
+        try:
+            logger.info(f"正在添加标点符号...")
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                {"role": "system", "content": "Correct errors and add punctuation to the speech recognition input. If no changes are needed, output it directly. No explanation is required—just output."},
+                {"role": "user", "content": text}
+            ]
+        )
+            return response.choices[0].message.content
+        except Exception as e:
+            return text, e
