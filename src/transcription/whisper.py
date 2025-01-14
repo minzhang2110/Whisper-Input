@@ -108,8 +108,11 @@ class WhisperProcessor:
                 result = self._call_api(mode, audio_data, prompt)
                 logger.info(f"Whisper API 调用成功 ({mode}), 耗时: {time.time() - start_time:.1f}秒")
                 result = self._convert_traditional_to_simplified(result)
-                if self.add_symbol:
-                    result = self.symbol.add_symbol(result)
+                logger.info(f"识别结果: {result}")
+                # if self.add_symbol:
+                #     result = self.symbol.add_symbol(result)
+                result = self.symbol.optimize_result(result)
+                logger.info(f"优化结果: {result}")
                 return result, None
                 
         except TimeoutError:
