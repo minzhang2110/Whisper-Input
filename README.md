@@ -55,6 +55,8 @@ Whisper Input 是受到即友[FeiTTT](https://web.okjike.com/u/DB98BE7A-9DBB-473
 
 8. 安装依赖
     ```bash
+    pip install pip-tools
+    pip-compile requirements.in
     pip install -r requirements.txt
     ```
 
@@ -98,6 +100,10 @@ Whisper Input 是受到即友[FeiTTT](https://web.okjike.com/u/DB98BE7A-9DBB-473
 **如果你也有想法：** 欢迎 Fork 和 PR，如果你在使用当中遇到问题，欢迎提交 Issue。
 
 ## 更新日志
+
+#### 2025.01.15
+> 1. 支持 Windows，所有用户需要根据自己的本地环境 pip-compile 
+> 2. 采用字节流 buffer 存储录音，不需要存储到本地
 
 #### 2025.01.14
 > 1. 支持语音输入结果优化，并更换推荐模型为 `Llama 3.3 70B`，同样免费

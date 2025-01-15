@@ -34,16 +34,15 @@ class VoiceAssistant:
     
     def stop_transcription_recording(self):
         """停止录音并处理（转录模式）"""
-        audio_path = self.audio_recorder.stop_recording()
-        if audio_path:
-            result = self.whisper_processor.process_audio(
-                audio_path,
+        audio = self.audio_recorder.stop_recording()
+        result = self.whisper_processor.process_audio(
+                audio,
                 mode="transcriptions",
                 prompt=""
             )
-            # 解构返回值
-            text, error = result if isinstance(result, tuple) else (result, None)
-            self.keyboard_manager.type_text(text, error)
+        # 解构返回值
+        text, error = result if isinstance(result, tuple) else (result, None)
+        self.keyboard_manager.type_text(text, error)
     
     def start_translation_recording(self):
         """开始录音（翻译模式）"""
@@ -51,21 +50,20 @@ class VoiceAssistant:
     
     def stop_translation_recording(self):
         """停止录音并处理（翻译模式）"""
-        audio_path = self.audio_recorder.stop_recording()
-        if audio_path:
-            text = self.whisper_processor.process_audio(
-                audio_path,
+        audio = self.audio_recorder.stop_recording()
+        result = self.whisper_processor.process_audio(
+                audio,
                 mode="translations",
                 prompt=""
             )
-            if text:
-                self.keyboard_manager.type_text(text)
+        text, error = result if isinstance(result, tuple) else (result, None)
+        self.keyboard_manager.type_text(text,error)
     
     def run(self):
         """运行语音助手"""
         logger.info("=== 语音助手已启动 ===")
-        logger.info("按住 Option 键：实时语音转录（保持原文）")
-        logger.info("按住 Shift + Option 键：实时语音翻译（翻译成英文）")
+        # logger.info("按住 Option 键：实时语音转录（保持原文）")
+        # logger.info("按住 Shift + Option 键：实时语音翻译（翻译成英文）")
         self.keyboard_manager.start_listening()
 
 def main():
