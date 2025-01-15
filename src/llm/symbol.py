@@ -12,12 +12,16 @@ class SymbolProcessor:
 
     def add_symbol(self, text):
         """为输入的文本添加合适的标点符号"""
+
+        system_prompt = """
+        Please add appropriate punctuation to the user’s input and return it. Apart from this, do not add or modify anything else.
+        """
         try:
             logger.info(f"正在添加标点符号...")
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                {"role": "system", "content": "Please add appropriate punctuation to the user’s input and return it. Apart from this, do not add or modify anything else."},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": text}
             ]
         )
@@ -27,12 +31,23 @@ class SymbolProcessor:
         
     def optimize_result(self, text):
         """优化识别结果"""
+        system_prompt = """
+        Since the user’s input is the result of speech recognition, there may be some very obvious inaccuracies or errors. 
+        Please make minor corrections based on your knowledge. 
+        If the user’s speech recognition result is fine, no changes are necessary—just output it directly. 
+        Additionally, the user’s speech recognition input might lack necessary punctuation. 
+        Please help add the appropriate punctuation and return the final result.
+
+        Notice:
+        - Do not directly answer the user’s question.
+        - Do not add any explanation.
+        """
         try:
-            logger.info(f"正在添加标点符号...")
+            logger.info(f"正在优化识别结果...")
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                {"role": "system", "content": "Correct errors and add punctuation to the speech recognition input. If no changes are needed, output it directly. No explanation is required—just output."},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": text}
             ]
         )
