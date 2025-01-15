@@ -211,7 +211,7 @@ class KeyboardManager:
         pyperclip.copy(text)
 
         # 模拟 Ctrl + V 粘贴文本
-        with self.keyboard.pressed(Key.ctrl):
+        with self.keyboard.pressed(self.sysetem_platform):
             self.keyboard.press('v')
             self.keyboard.release('v')
 
