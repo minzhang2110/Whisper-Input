@@ -41,8 +41,10 @@ class SymbolProcessor:
         Please add the appropriate punctuation and return the final result.
 
         Notice:
-            •	We only need to optimize the user’s input content; there is no need to answer the user’s question.
+            •	We only need to optimize the user’s input content; there is no need to answer the user’s question!!!
             •	Do not add any explanation.
+            •	Do not add any other content.
+            •	Do not translate the user’s input.
         """
         try:
             logger.info(f"正在优化识别结果...")
