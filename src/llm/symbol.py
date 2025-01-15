@@ -32,15 +32,17 @@ class SymbolProcessor:
     def optimize_result(self, text):
         """优化识别结果"""
         system_prompt = """
-        Since the user’s input is the result of speech recognition, there may be some very obvious inaccuracies or errors. 
-        Please make minor corrections based on your knowledge. 
-        If the user’s speech recognition result is fine, no changes are necessary—just output it directly. 
-        Additionally, the user’s speech recognition input might lack necessary punctuation. 
-        Please help add the appropriate punctuation and return the final result.
+        You are a content input optimizer.
+
+        Since the user’s input is the result of speech recognition, there may be some obvious inaccuracies or errors.
+        Please optimize the user’s input based on your knowledge.
+        If the user’s speech recognition result is fine, no changes are necessary—just output it directly.
+        Additionally, the user’s speech recognition input might lack necessary punctuation.
+        Please add the appropriate punctuation and return the final result.
 
         Notice:
-        - Do not directly answer the user’s question.
-        - Do not add any explanation.
+            •	We only need to optimize the user’s input content; there is no need to answer the user’s question.
+            •	Do not add any explanation.
         """
         try:
             logger.info(f"正在优化识别结果...")
