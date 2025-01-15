@@ -1,3 +1,4 @@
+import io
 import sounddevice as sd
 import numpy as np
 import queue
@@ -12,12 +13,13 @@ class AudioRecorder:
         self.recording = False
         self.audio_queue = queue.Queue()
         self.sample_rate = 16000
-        self.temp_dir = tempfile.mkdtemp()
+        # self.temp_dir = tempfile.mkdtemp()
         self.current_device = None
         self.record_start_time = None
         self.min_record_duration = 1.0  # 最小录音时长（秒）
         self._check_audio_devices()
-        logger.info(f"初始化完成，临时文件目录: {self.temp_dir}")
+        # logger.info(f"初始化完成，临时文件目录: {self.temp_dir}")
+        logger.info(f"初始化完成")
     
     def _list_audio_devices(self):
         """列出所有可用的音频输入设备"""
@@ -134,13 +136,18 @@ class AudioRecorder:
         # 合并音频数据
         audio = np.concatenate(audio_data)
         logger.info(f"音频数据长度: {len(audio)} 采样点")
+
+        # 将 numpy 数组转换为字节流
+        audio_buffer = io.BytesIO()
+        sf.write(audio_buffer, audio, self.sample_rate, format='WAV')
+        audio_buffer.seek(0)  # 将缓冲区指针移动到开始位置
         
-        # 保存为临时文件
-        temp_path = os.path.join(self.temp_dir, "temp_audio.wav")
-        sf.write(temp_path, audio, self.sample_rate)
-        logger.info(f"音频已保存到临时文件: {temp_path}")
+        # # 保存为临时文件
+        # temp_path = os.path.join(self.temp_dir, "temp_audio.wav")
+        # sf.write(temp_path, audio, self.sample_rate)
+        # logger.info(f"音频已保存到临时文件: {temp_path}")
         
-        return temp_path
+        return audio_buffer
     
     def cleanup(self):
         """清理临时文件"""
