@@ -51,6 +51,7 @@ class WhisperProcessor:
         self.cc = OpenCC('t2s') if self.convert_to_simplified else None
         self.symbol = SymbolProcessor()
         self.add_symbol = os.getenv("ADD_SYMBOL", "false").lower() == "true"
+        self.optimize_result = os.getenv("OPTIMIZE_RESULT", "false").lower() == "true"
         
         if not api_key:
             raise ValueError("未设置 GROQ_API_KEY 环境变量")
@@ -60,6 +61,7 @@ class WhisperProcessor:
             base_url=base_url if base_url else None
         )
         self.timeout_seconds = self.DEFAULT_TIMEOUT
+
     
     def _convert_traditional_to_simplified(self, text):
         """将繁体中文转换为简体中文"""
@@ -108,18 +110,16 @@ class WhisperProcessor:
             logger.info(f"Whisper API 调用成功 ({mode}), 耗时: {time.time() - start_time:.1f}秒")
             result = self._convert_traditional_to_simplified(result)
             logger.info(f"识别结果: {result}")
-            # if self.add_symbol:
-            #     result = self.symbol.add_symbol(result)
-            result = self.symbol.optimize_result(result)
-            logger.info(f"优化结果: {result}")
+            if self.add_symbol:
+                result = self.symbol.add_symbol(result)
+                logger.info(f"添加标点符号: {result}")
+            if self.optimize_result:
+                result = self.symbol.optimize_result(result)
+                logger.info(f"优化结果: {result}")
+
             return result, None
             
-            # with open(audio_path, "rb") as audio_file:
-            #     audio_data = audio_file.read()
-            #     result = self._call_api(mode, audio_data, prompt)
-            #     logger.info(f"Whisper API 调用成功 ({mode}), 耗时: {time.time() - start_time:.1f}秒")
-            #     return result, None
-                
+
         except TimeoutError:
             error_msg = f"❌ API 请求超时 ({self.timeout_seconds}秒)"
             logger.error(error_msg)
@@ -130,10 +130,3 @@ class WhisperProcessor:
             return None, error_msg
         finally:
             audio_buffer.close()  # 显式关闭字节流
-        # finally:
-        #     # 删除临时文件
-        #     try:
-        #         os.remove(audio_path)
-        #         logger.info("临时音频文件已删除")
-        #     except Exception as e:
-        #         logger.error(f"删除临时文件失败: {e}") 

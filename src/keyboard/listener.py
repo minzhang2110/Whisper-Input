@@ -200,7 +200,7 @@ class KeyboardManager:
             for _ in range(self.temp_text_length):
                 self.keyboard.press(Key.backspace)
                 self.keyboard.release(Key.backspace)
-                time.sleep(0.05) 
+                
         self.temp_text_length = 0
     
     def type_temp_text(self, text):

@@ -101,6 +101,9 @@ Whisper Input 是受到即友[FeiTTT](https://web.okjike.com/u/DB98BE7A-9DBB-473
 
 ## 更新日志
 
+#### 2025.01.16
+> 1. 添加标点和优化进行区分，并且默认不优化转译内容。
+
 #### 2025.01.15
 > 1. 支持 Windows，所有用户需要根据自己的本地环境 pip-compile 
 > 2. 采用字节流 buffer 存储录音，不需要存储到本地
