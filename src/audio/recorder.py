@@ -107,7 +107,7 @@ class AudioRecorder:
                 raise
     
     def stop_recording(self):
-        """停止录音并返回临时文件路径"""
+        """停止录音并返回音频数据"""
         if not self.recording:
             return None
             
@@ -118,14 +118,13 @@ class AudioRecorder:
         
         # 检查录音时长
         if self.record_start_time:
-            duration = time.time() - self.record_start_time
-            if duration < self.min_record_duration:
-                logger.warning(f"录音时长过短 ({duration:.1f}秒 < {self.min_record_duration}秒)")
-                return None
+            record_duration = time.time() - self.record_start_time
+            if record_duration < self.min_record_duration:
+                logger.warning(f"录音时长太短 ({record_duration:.1f}秒 < {self.min_record_duration}秒)")
+                return "TOO_SHORT"
         
         # 收集所有音频数据
         audio_data = []
-        logger.info("处理录音数据...")
         while not self.audio_queue.empty():
             audio_data.append(self.audio_queue.get())
         
@@ -142,21 +141,4 @@ class AudioRecorder:
         sf.write(audio_buffer, audio, self.sample_rate, format='WAV')
         audio_buffer.seek(0)  # 将缓冲区指针移动到开始位置
         
-        # # 保存为临时文件
-        # temp_path = os.path.join(self.temp_dir, "temp_audio.wav")
-        # sf.write(temp_path, audio, self.sample_rate)
-        # logger.info(f"音频已保存到临时文件: {temp_path}")
-        
         return audio_buffer
-    
-    def cleanup(self):
-        """清理临时文件"""
-        try:
-            import shutil
-            shutil.rmtree(self.temp_dir)
-            logger.info("临时目录已清理")
-        except Exception as e:
-            logger.error(f"清理临时目录失败: {e}")
-    
-    def __del__(self):
-        self.cleanup() 

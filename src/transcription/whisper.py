@@ -69,7 +69,7 @@ class WhisperProcessor:
             return text
         return self.cc.convert(text)
     
-    @timeout_decorator(20)
+    @timeout_decorator(10)
     def _call_api(self, mode, audio_data, prompt):
         """调用 Whisper API"""
         if mode == "translations":

@@ -25,7 +25,8 @@ class VoiceAssistant:
             on_record_start=self.start_transcription_recording,
             on_record_stop=self.stop_transcription_recording,
             on_translate_start=self.start_translation_recording,
-            on_translate_stop=self.stop_translation_recording
+            on_translate_stop=self.stop_translation_recording,
+            on_reset_state=self.reset_state
         )
     
     def start_transcription_recording(self):
@@ -35,14 +36,21 @@ class VoiceAssistant:
     def stop_transcription_recording(self):
         """停止录音并处理（转录模式）"""
         audio = self.audio_recorder.stop_recording()
-        result = self.whisper_processor.process_audio(
+        if audio == "TOO_SHORT":
+            logger.warning("录音时长太短，状态将重置")
+            self.keyboard_manager.reset_state()
+        elif audio:
+            result = self.whisper_processor.process_audio(
                 audio,
                 mode="transcriptions",
                 prompt=""
             )
-        # 解构返回值
-        text, error = result if isinstance(result, tuple) else (result, None)
-        self.keyboard_manager.type_text(text, error)
+            # 解构返回值
+            text, error = result if isinstance(result, tuple) else (result, None)
+            self.keyboard_manager.type_text(text, error)
+        else:
+            logger.error("没有录音数据，状态将重置")
+            self.keyboard_manager.reset_state()
     
     def start_translation_recording(self):
         """开始录音（翻译模式）"""
@@ -51,19 +59,28 @@ class VoiceAssistant:
     def stop_translation_recording(self):
         """停止录音并处理（翻译模式）"""
         audio = self.audio_recorder.stop_recording()
-        result = self.whisper_processor.process_audio(
-                audio,
-                mode="translations",
-                prompt=""
-            )
-        text, error = result if isinstance(result, tuple) else (result, None)
-        self.keyboard_manager.type_text(text,error)
+        if audio == "TOO_SHORT":
+            logger.warning("录音时长太短，状态将重置")
+            self.keyboard_manager.reset_state()
+        elif audio:
+            result = self.whisper_processor.process_audio(
+                    audio,
+                    mode="translations",
+                    prompt=""
+                )
+            text, error = result if isinstance(result, tuple) else (result, None)
+            self.keyboard_manager.type_text(text,error)
+        else:
+            logger.error("没有录音数据，状态将重置")
+            self.keyboard_manager.reset_state()
+
+    def reset_state(self):
+        """重置状态"""
+        self.keyboard_manager.reset_state()
     
     def run(self):
         """运行语音助手"""
         logger.info("=== 语音助手已启动 ===")
-        # logger.info("按住 Option 键：实时语音转录（保持原文）")
-        # logger.info("按住 Shift + Option 键：实时语音翻译（翻译成英文）")
         self.keyboard_manager.start_listening()
 
 def main():

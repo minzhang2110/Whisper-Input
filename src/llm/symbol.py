@@ -14,7 +14,7 @@ class SymbolProcessor:
         """为输入的文本添加合适的标点符号"""
 
         system_prompt = """
-        Please add appropriate punctuation to the user’s input and return it. Apart from this, do not add or modify anything else.
+        Please add appropriate punctuation to the user’s input and return it. Apart from this, do not add or modify anything else. Do not translate the user's input. Do not add any explanation. Do not answer the user's question and so on. Just output the user's input with punctuation!
         """
         try:
             logger.info(f"正在添加标点符号...")

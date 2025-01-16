@@ -7,7 +7,7 @@ import os
 
 
 class KeyboardManager:
-    def __init__(self, on_record_start, on_record_stop, on_translate_start, on_translate_stop):
+    def __init__(self, on_record_start, on_record_stop, on_translate_start, on_translate_stop, on_reset_state):
         self.keyboard = Controller()
         self.option_pressed = False
         self.shift_pressed = False
@@ -26,6 +26,8 @@ class KeyboardManager:
         self.on_record_stop = on_record_stop
         self.on_translate_start = on_translate_start
         self.on_translate_stop = on_translate_stop
+        self.on_reset_state = on_reset_state
+
         
         # 状态管理
         self._state = InputState.IDLE
@@ -200,7 +202,7 @@ class KeyboardManager:
             for _ in range(self.temp_text_length):
                 self.keyboard.press(Key.backspace)
                 self.keyboard.release(Key.backspace)
-                
+
         self.temp_text_length = 0
     
     def type_temp_text(self, text):
@@ -240,7 +242,7 @@ class KeyboardManager:
                         # self.on_record_start()
                         self.has_triggered = True
                 
-                time.sleep(0.1)  # 短暂休眠以降低 CPU 使用率
+                time.sleep(0.01)  # 短暂休眠以降低 CPU 使用率
 
         self.is_checking_duration = True
         import threading
@@ -288,6 +290,24 @@ class KeyboardManager:
         """开始监听键盘事件"""
         with Listener(on_press=self.on_press, on_release=self.on_release) as listener:
             listener.join()
+
+    def reset_state(self):
+        """重置所有状态和临时文本"""
+        # 清除临时文本
+        self._delete_previous_text()
+        
+        # 重置状态标志
+        self.option_pressed = False
+        self.shift_pressed = False
+        self.option_press_time = None
+        self.is_checking_duration = False
+        self.has_triggered = False
+        self.processing_text = None
+        self.error_message = None
+        self.warning_message = None
+        
+        # 设置为空闲状态
+        self.state = InputState.IDLE
 
 def check_accessibility_permissions():
     """检查是否有辅助功能权限并提供指导"""
