@@ -1,12 +1,15 @@
 import os
-from ..llm.symbol import SymbolProcessor
-from openai import OpenAI
-from ..utils.logger import logger
-import dotenv
-import time
 import threading
+import time
 from functools import wraps
+
+import dotenv
+import httpx
+from openai import OpenAI
 from opencc import OpenCC
+
+from ..llm.symbol import SymbolProcessor
+from ..utils.logger import logger
 
 dotenv.load_dotenv()
 
@@ -42,7 +45,7 @@ def timeout_decorator(seconds):
 class WhisperProcessor:
     # 类级别的配置参数
     DEFAULT_TIMEOUT = 20  # API 超时时间（秒）
-    DEFAULT_MODEL = "whisper-large-v3-turbo"
+    DEFAULT_MODEL = None
     
     def __init__(self):
         api_key = os.getenv("GROQ_API_KEY")
@@ -52,17 +55,22 @@ class WhisperProcessor:
         self.symbol = SymbolProcessor()
         self.add_symbol = os.getenv("ADD_SYMBOL", "false").lower() == "true"
         self.optimize_result = os.getenv("OPTIMIZE_RESULT", "false").lower() == "true"
-        
-        if not api_key:
-            raise ValueError("未设置 GROQ_API_KEY 环境变量")
-            
-        self.client = OpenAI(
-            api_key=api_key,
-            base_url=base_url if base_url else None
-        )
         self.timeout_seconds = self.DEFAULT_TIMEOUT
+        self.service_platform = os.getenv("SERVICE_PLATFORM", "groq").lower()
 
-    
+        if self.service_platform == "groq":
+            assert api_key, "未设置 GROQ_API_KEY 环境变量"
+            self.client = OpenAI(
+                api_key=api_key,
+                base_url=base_url if base_url else None
+            )
+            self.DEFAULT_MODEL = "whisper-large-v3-turbo"
+        elif self.service_platform == "siliconflow":
+            assert api_key, "未设置 SILICONFLOW_API_KEY 环境变量"
+            self.DEFAULT_MODEL = "FunAudioLLM/SenseVoiceSmall"
+        else:
+            raise ValueError(f"未知的平台: {self.service_platform}")
+
     def _convert_traditional_to_simplified(self, text):
         """将繁体中文转换为简体中文"""
         if not self.convert_to_simplified or not text:
@@ -70,7 +78,7 @@ class WhisperProcessor:
         return self.cc.convert(text)
     
     @timeout_decorator(10)
-    def _call_api(self, mode, audio_data, prompt):
+    def _call_whisper_api(self, mode, audio_data, prompt):
         """调用 Whisper API"""
         if mode == "translations":
             response = self.client.audio.translations.create(
@@ -88,6 +96,25 @@ class WhisperProcessor:
             )
         return str(response).strip()
     
+    @timeout_decorator(10)
+    def _call_siliconflow_api(self, audio_data):
+        """调用硅流 API"""
+        url = "https://api.siliconflow.cn/v1/audio/transcriptions"
+        
+        files = {
+            'file': ('audio.wav', audio_data),
+            'model': (None, self.DEFAULT_MODEL)
+        }
+
+        headers = {
+            'Authorization': f"Bearer {os.getenv('SILICONFLOW_API_KEY')}"
+        }
+        
+        with httpx.Client() as client:
+            response = client.post(url, files=files, headers=headers)
+            response.raise_for_status()
+            return response.json().get('text', '获取失败')
+
     def process_audio(self, audio_buffer, mode="transcriptions", prompt=""):
         """调用 Whisper API 处理音频（转录或翻译）
         
@@ -102,15 +129,21 @@ class WhisperProcessor:
             - 如果失败，结果文本为 None
         """
         try:
-            logger.info(f"正在调用 Whisper API... (模式: {mode})")
             start_time = time.time()
 
+            if self.service_platform == "siliconflow":
+                logger.info(f"正在调用 硅基流动 API... (模式: transcriptions)")
+                result = self._call_siliconflow_api(audio_buffer)
+            elif self.service_platform == "groq":
+                logger.info(f"正在调用 Whisper API... (模式: {mode})")
+                result = self._call_whisper_api(mode, audio_buffer, prompt)
 
-            result = self._call_api(mode, audio_buffer, prompt)
-            logger.info(f"Whisper API 调用成功 ({mode}), 耗时: {time.time() - start_time:.1f}秒")
+            logger.info(f"API 调用成功 ({mode}), 耗时: {time.time() - start_time:.1f}秒")
             result = self._convert_traditional_to_simplified(result)
             logger.info(f"识别结果: {result}")
-            if self.add_symbol:
+            
+            # 仅在 groq API 时添加标点符号
+            if self.service_platform == "groq" and self.add_symbol:
                 result = self.symbol.add_symbol(result)
                 logger.info(f"添加标点符号: {result}")
             if self.optimize_result:
