@@ -9,4 +9,5 @@ pyperclip
 soundfile
 colorlog
 openai
+httpx
 opencc-python-reimplemented

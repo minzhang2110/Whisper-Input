@@ -95,25 +95,6 @@ class WhisperProcessor:
                 file=("audio.wav", audio_data)
             )
         return str(response).strip()
-    
-    @timeout_decorator(10)
-    def _call_siliconflow_api(self, audio_data):
-        """调用硅流 API"""
-        url = "https://api.siliconflow.cn/v1/audio/transcriptions"
-        
-        files = {
-            'file': ('audio.wav', audio_data),
-            'model': (None, self.DEFAULT_MODEL)
-        }
-
-        headers = {
-            'Authorization': f"Bearer {os.getenv('SILICONFLOW_API_KEY')}"
-        }
-        
-        with httpx.Client() as client:
-            response = client.post(url, files=files, headers=headers)
-            response.raise_for_status()
-            return response.json().get('text', '获取失败')
 
     def process_audio(self, audio_buffer, mode="transcriptions", prompt=""):
         """调用 Whisper API 处理音频（转录或翻译）
@@ -131,12 +112,8 @@ class WhisperProcessor:
         try:
             start_time = time.time()
 
-            if self.service_platform == "siliconflow":
-                logger.info(f"正在调用 硅基流动 API... (模式: transcriptions)")
-                result = self._call_siliconflow_api(audio_buffer)
-            elif self.service_platform == "groq":
-                logger.info(f"正在调用 Whisper API... (模式: {mode})")
-                result = self._call_whisper_api(mode, audio_buffer, prompt)
+            logger.info(f"正在调用 Whisper API... (模式: {mode})")
+            result = self._call_whisper_api(mode, audio_buffer, prompt)
 
             logger.info(f"API 调用成功 ({mode}), 耗时: {time.time() - start_time:.1f}秒")
             result = self._convert_traditional_to_simplified(result)

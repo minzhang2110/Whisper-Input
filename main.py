@@ -1,8 +1,16 @@
+import os
 import sys
+
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from src.audio.recorder import AudioRecorder
 from src.keyboard.listener import KeyboardManager, check_accessibility_permissions
 from src.transcription.whisper import WhisperProcessor
 from src.utils.logger import logger
+from src.transcription.senseVoiceSmall import SenseVoiceSmallProcessor
+
 
 def check_microphone_permissions():
     """检查麦克风权限并提供指导"""
@@ -18,9 +26,9 @@ def check_microphone_permissions():
     logger.warning("===============================\n")
 
 class VoiceAssistant:
-    def __init__(self):
+    def __init__(self, audio_processor):
         self.audio_recorder = AudioRecorder()
-        self.whisper_processor = WhisperProcessor()
+        self.audio_processor = audio_processor
         self.keyboard_manager = KeyboardManager(
             on_record_start=self.start_transcription_recording,
             on_record_stop=self.stop_transcription_recording,
@@ -40,7 +48,7 @@ class VoiceAssistant:
             logger.warning("录音时长太短，状态将重置")
             self.keyboard_manager.reset_state()
         elif audio:
-            result = self.whisper_processor.process_audio(
+            result = self.audio_processor.process_audio(
                 audio,
                 mode="transcriptions",
                 prompt=""
@@ -63,7 +71,7 @@ class VoiceAssistant:
             logger.warning("录音时长太短，状态将重置")
             self.keyboard_manager.reset_state()
         elif audio:
-            result = self.whisper_processor.process_audio(
+            result = self.audio_processor.process_audio(
                     audio,
                     mode="translations",
                     prompt=""
@@ -84,8 +92,16 @@ class VoiceAssistant:
         self.keyboard_manager.start_listening()
 
 def main():
+    # 判断是 Whisper 还是 SiliconFlow
+    service_platform = os.getenv("SERVICE_PLATFORM", "siliconflow")
+    if service_platform == "groq":
+        audio_processor = WhisperProcessor()
+    elif service_platform == "siliconflow":
+        audio_processor = SenseVoiceSmallProcessor()
+    else:
+        raise ValueError(f"无效的服务平台: {service_platform}")
     try:
-        assistant = VoiceAssistant()
+        assistant = VoiceAssistant(audio_processor)
         assistant.run()
     except Exception as e:
         error_msg = str(e)

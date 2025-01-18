@@ -1,8 +1,10 @@
 # Whisper Input
 
-Whisper Input 是受到即友[FeiTTT](https://web.okjike.com/u/DB98BE7A-9DBB-4730-B6B9-2DC883B986B1)启发做的一个简单的 python 代码。可以实现按下 Option 按钮开始录制，抬起按钮就结束录制，并调用 Groq Whisper Large V3 Turbo 模型进行转译，由于 Groq 的速度非常快，所以大部分的语音输入都可以在 1-2s 内反馈。并且得益于 whisper 的强大能力，转译效果非常不错。
+Whisper Input 是受到即友[FeiTTT](https://web.okjike.com/u/DB98BE7A-9DBB-4730-B6B9-2DC883B986B1)启发做的一个简单的 python 代码。可以实现按下 Option 按钮开始录制，抬起按钮就结束录制，并调用 Groq `Whisper Large V3 Turbo` 模型进行转译，由于 Groq 的速度非常快，所以大部分的语音输入都可以在 1-2s 内反馈。并且得益于 whisper 的强大能力，转译效果非常不错。
 
-🎉🎉由于目前已经发现了更好用的语音输入软件[WhisperKeyBoard](https://whisperkeyboard.app/)，非常推荐大家可以直接使用这款软件即可。Whisper Input 的中心将继续回到 Voice + Agents 上。
+- 🎉🎉由于目前已经发现了更好用的语音输入软件[WhisperKeyBoard](https://whisperkeyboard.app/)，非常推荐大家可以直接使用这款软件即可。Whisper Input 的中心将继续回到 Voice + Agents 上。
+
+- 支持由 SiliconFlow 托管的 `FunAudioLLM/SenseVoiceSmall` 模型，速度比 Groq 托管的 `Whisper Large V3 Turbo` 更快，识别更准确，并且自带标点符号。**最重要的是普通用户也无用量限制！**
 
 ## 功能
 
@@ -17,12 +19,62 @@ Whisper Input 是受到即友[FeiTTT](https://web.okjike.com/u/DB98BE7A-9DBB-473
 
 
 
-**重点：Groq 只要注册，就提供一定的免费用量，并且在我们这个使用场景下免费已经完全够用了！**
+**重点：Groq 和 SiliconFlow 都提供免费用量，并且都足够，无需付费，无需绑定信用卡**
 
-**🧐 目前已经支持代理模式使用 Groq Whisper 了，可以联系我为你提供对应的 API KEY。微信搜索：`geekthings`**
 
 ## 使用方法
 
+> 目前支持两种免费的 ASR 模型，分别是 Groq 托管的 `Whisper Large V3 系列` 以及 SiliconFlow 托管的 `FunAudioLLM/SenseVoiceSmall` 系列。所以以下配置只需要二选一即可。
+
+### 前提
+请确保你的本地有 Python 环境，并且 Python 版本不低于 3.10。
+
+### FunAudioLLM/SenseVoiceSmall 模型配置方法
+1. 注册 SiliconFlow 账户：https://siliconflow.cn/zh-cn/models
+2. 创建并复制免费的 API KEY：https://cloud.siliconflow.cn/account/ak
+3. 打开 `终端` ，进入到想要下载项目的文件夹
+    ```bash
+    git clone git@github.com:ErlichLiu/Whisper-Input.git
+    ```
+4. 创建虚拟环境 【推荐】
+    ```bash
+    python -m venv venv
+    ```
+
+5. 重命名 `.env` 文件
+    ```bash
+    cp .env.example .env
+    ```
+
+6. 粘贴在第 2 步复制的 API KEY 到 `.env`  文件，效果类似
+    ```bash
+    SERVICE_PLATFORM=siliconflow
+    SILICONFLOW_API_KEY=sk_z8q3rXrQM3o******************8dQEJCYz3QTJQYZ
+    ```
+
+7. 在最好不需要关闭的 `终端` 内进入到对应文件夹，然后激活虚拟环境
+    ```bash
+    # macOS / Linux
+    source venv/bin/activate
+    
+    # Windows
+    .\venv\Scripts\activate
+    ```
+
+8. 安装依赖
+    ```bash
+    pip install pip-tools
+    pip-compile requirements.in
+    pip install -r requirements.txt
+    ```
+
+9. 运行程序
+    ```bash
+    python main.py
+    ```
+
+
+### Groq Whisper Large V3 模型配置方法
 1. 注册 Groq 账户：https://console.groq.com/login
 2. 复制 Groq 免费的 API KEY：https://console.groq.com/keys
 3. 打开 `终端` ，进入到想要下载项目的文件夹
@@ -41,6 +93,7 @@ Whisper Input 是受到即友[FeiTTT](https://web.okjike.com/u/DB98BE7A-9DBB-473
 
 6. 粘贴在第 2 步复制的 API KEY 到 `.env`  文件，效果类似
     ```bash
+    SERVICE_PLATFORM=groq
     GROQ_API_KEY=gsk_z8q3rXrQM3o******************8dQEJCYz3QTJQYZ
     ```
 
@@ -100,6 +153,9 @@ Whisper Input 是受到即友[FeiTTT](https://web.okjike.com/u/DB98BE7A-9DBB-473
 **如果你也有想法：** 欢迎 Fork 和 PR，如果你在使用当中遇到问题，欢迎提交 Issue。
 
 ## 更新日志
+
+#### 2025.01.19
+> 1. 添加对 SiliconFlow 硅基流动托管的转译模型[FunAudioLLM/SenseVoiceSmall](https://docs.siliconflow.cn/api-reference/audio/create-audio-transcriptions) 的支持，自带标点，无需润色，输出结果更快。由 @WEIFENG2333 贡献。
 
 #### 2025.01.16
 > 1. 添加标点和优化进行区分，并且默认不优化转译内容
