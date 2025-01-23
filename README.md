@@ -30,7 +30,7 @@ Whisper Input 是受到即友[FeiTTT](https://web.okjike.com/u/DB98BE7A-9DBB-473
 请确保你的本地有 Python 环境，并且 Python 版本不低于 3.10。
 
 ### FunAudioLLM/SenseVoiceSmall 模型配置方法
-1. 注册 SiliconFlow 账户：https://siliconflow.cn/zh-cn/models
+1. 注册 SiliconFlow 账户：https://cloud.siliconflow.cn/i/RXikvHE2
 2. 创建并复制免费的 API KEY：https://cloud.siliconflow.cn/account/ak
 3. 打开 `终端` ，进入到想要下载项目的文件夹
     ```bash
