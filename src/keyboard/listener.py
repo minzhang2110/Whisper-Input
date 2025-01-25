@@ -19,6 +19,7 @@ class KeyboardManager:
         self.PRESS_DURATION_THRESHOLD = 0.5  # 按键持续时间阈值（秒）
         self.is_checking_duration = False  # 用于控制定时器线程
         self.has_triggered = False  # 用于防止重复触发
+        self._original_clipboard = None  # 保存原始剪贴板内容
         
         
         # 回调函数
@@ -154,6 +155,17 @@ class KeyboardManager:
         self.error_message = error_message
         self.state = InputState.ERROR
     
+    def _save_clipboard(self):
+        """保存当前剪贴板内容"""
+        if self._original_clipboard is None:
+            self._original_clipboard = pyperclip.paste()
+
+    def _restore_clipboard(self):
+        """恢复原始剪贴板内容"""
+        if self._original_clipboard is not None:
+            pyperclip.copy(self._original_clipboard)
+            self._original_clipboard = None
+
     def type_text(self, text, error_message=None):
         """将文字输入到当前光标位置
         
@@ -178,6 +190,7 @@ class KeyboardManager:
         try:
             logger.info("正在输入转录文本...")
             self._delete_previous_text()
+            
             # 先输入文本和完成标记
             self.type_temp_text(text+" ✅")
             
@@ -187,6 +200,13 @@ class KeyboardManager:
             # 删除完成标记（2个字符：空格和✅）
             self.temp_text_length = 2
             self._delete_previous_text()
+            
+            # 将转录结果复制到剪贴板
+            if os.getenv("KEEP_ORIGINAL_CLIPBOARD", "true").lower() != "true":
+                pyperclip.copy(text)
+            else:
+                # 恢复原始剪贴板内容
+                self._restore_clipboard()
             
             logger.info("文本输入完成")
             
@@ -209,6 +229,7 @@ class KeyboardManager:
         """输入临时状态文本"""
         if not text:
             return
+            
         # 将文本复制到剪贴板
         pyperclip.copy(text)
 
@@ -252,9 +273,12 @@ class KeyboardManager:
         """按键按下时的回调"""
         try:
             if key == self.transcriptions_button: #Key.f8:  # Option 键按下
+                # 在开始任何操作前保存剪贴板内容
+                if self._original_clipboard is None:
+                    self._original_clipboard = pyperclip.paste()
+                    
                 self.option_pressed = True
                 self.option_press_time = time.time()
-                #self.has_triggered = False
                 self.start_duration_check()
             elif key == self.translations_button:
                 self.shift_pressed = True
@@ -295,6 +319,9 @@ class KeyboardManager:
         """重置所有状态和临时文本"""
         # 清除临时文本
         self._delete_previous_text()
+        
+        # 恢复剪贴板
+        self._restore_clipboard()
         
         # 重置状态标志
         self.option_pressed = False
