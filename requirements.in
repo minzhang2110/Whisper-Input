@@ -10,4 +10,5 @@ soundfile
 colorlog
 openai
 httpx
+requests
 opencc-python-reimplemented

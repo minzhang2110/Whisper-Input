@@ -154,6 +154,9 @@ Whisper Input 是受到即友[FeiTTT](https://web.okjike.com/u/DB98BE7A-9DBB-473
 
 ## 更新日志
 
+#### 2025.01.25
+> 1. 支持通过环境变量配置恢复原始剪贴板内容，环境变量 `KEEP_ORIGINAL_CLIPBOARD` 默认为 `true` ，设置为 `false` 的时候不恢复
+
 #### 2025.01.19
 > 1. 添加对 SiliconFlow 硅基流动托管的转译模型[FunAudioLLM/SenseVoiceSmall](https://docs.siliconflow.cn/api-reference/audio/create-audio-transcriptions) 的支持，自带标点，无需润色，输出结果更快。由 @WEIFENG2333 贡献。
 
