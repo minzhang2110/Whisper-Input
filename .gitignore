@@ -18,3 +18,16 @@ practice.md
 
 # 忽略 cursorrules 文件
 .cursorrules
+
+# 忽略 logs 目录
+logs/
+app.log
+
+# 忽略 .eggs
+.eggs/
+
+# 忽略 build
+build/
+
+# 忽略 dist
+dist/
