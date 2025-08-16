@@ -46,8 +46,8 @@ class SenseVoiceSmallProcessor:
     DEFAULT_MODEL = "FunAudioLLM/SenseVoiceSmall"
     
     def __init__(self):
-        api_key = os.getenv("SILICONFLOW_API_KEY")
-        assert api_key, "未设置 SILICONFLOW_API_KEY 环境变量"
+        self.local_sensevoice_url = os.getenv("LOCAL_SENSEVOICE_URL")
+        assert self.local_sensevoice_url, "未设置 LOCAL_SENSEVOICE_URL 环境变量"
         
         self.convert_to_simplified = os.getenv("CONVERT_TO_SIMPLIFIED", "false").lower() == "true"
         # self.cc = OpenCC('t2s') if self.convert_to_simplified else None
@@ -65,20 +65,15 @@ class SenseVoiceSmallProcessor:
 
     @timeout_decorator(10)
     def _call_api(self, audio_data):
-        """调用硅流 API"""
-        transcription_url = "https://api.siliconflow.cn/v1/audio/transcriptions"
+        """调用本地 SenseVoice API"""
         
         files = {
             'file': ('audio.wav', audio_data),
             'model': (None, self.DEFAULT_MODEL)
         }
 
-        headers = {
-            'Authorization': f"Bearer {os.getenv('SILICONFLOW_API_KEY')}"
-        }
-
         with httpx.Client() as client:
-            response = client.post(transcription_url, files=files, headers=headers)
+            response = client.post(self.local_sensevoice_url, files=files)
             response.raise_for_status()
             return response.json().get('text', '获取失败')
 
